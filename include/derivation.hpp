@@ -88,25 +88,32 @@ derivate(context_free_grammar_t &cfg, const vector<symbol_t> &sentence,
       production_offset--;
       continue;
     }
-    sentence_copy = sentence;
+    long offset = 0;
     const auto &symbol = i->first;
     const auto &chain = i->second;
-    auto search_res = search(sentence_copy.begin(), sentence_copy.end(),
-                             chain.begin(), chain.end());
-    if (search_res != sentence_copy.end()) {
-      auto offset = distance(sentence_copy.begin(), search_res);
-      auto limit_it = search_res + chain.size();
-      sentence_copy.erase(search_res, limit_it);
-      sentence_copy.insert(sentence_copy.begin() + offset, {symbol});
-      results.push_back(make_shared<derivation_result_t>(derivation_result_t{
-          .production_index = (int)(i - cfg.production_rule.rbegin()),
-          .new_sentence = sentence_copy,
-          .old_sentence = sentence,
-          .offset = offset,
-          .limit = distance(sentence_copy.begin(), limit_it),
-          .symbol = symbol,
-          .chain = chain,
-      }));
+
+    while (true) {
+      sentence_copy = sentence;
+      auto search_res = search(sentence_copy.begin() + offset,
+                               sentence_copy.end(), chain.begin(), chain.end());
+      if (search_res != sentence_copy.end()) {
+        offset = distance(sentence_copy.begin(), search_res);
+        auto limit_it = search_res + chain.size();
+        sentence_copy.erase(search_res, limit_it);
+        sentence_copy.insert(sentence_copy.begin() + offset, {symbol});
+        results.push_back(make_shared<derivation_result_t>(derivation_result_t{
+            .production_index = (int)(i - cfg.production_rule.rbegin()),
+            .new_sentence = sentence_copy,
+            .old_sentence = sentence,
+            .offset = offset,
+            .limit = distance(sentence_copy.begin(), limit_it),
+            .symbol = symbol,
+            .chain = chain,
+        }));
+        offset++;
+      } else {
+        break;
+      }
     }
   }
   return results;
@@ -118,6 +125,7 @@ inline bool derivate_recursively(context_free_grammar_t &cfg,
                           shared_ptr<derivation_result_t> &_result) {
   history.push_back(sentence);
   auto results = derivate(cfg, sentence);
+  cout << results.size() << endl;
   for (auto &result : results) {
     if (result->new_sentence.size() == 1 &&
         result->new_sentence.at(0) == cfg.start) {
