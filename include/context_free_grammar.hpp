@@ -43,7 +43,7 @@ struct context_free_grammar_t {
   bool is_not_terminal(const symbol_t &symbol) const {
     return non_terminals.find(symbol) != non_terminals.end();
   }
-
+  
   bool is_terminal(const symbol_t &symbol) const {
     return terminals.find(symbol) != terminals.end();
   }

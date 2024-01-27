@@ -25,19 +25,37 @@ struct derivation_result_t {
   shared_ptr<derivation_result_t> super, ground;
 };
 
-bool operator==(const derivation_result_t &A, const derivation_result_t &B) {
-  return A.production_index == B.production_index;
-}
-
-struct sentences_history_t : vector<vector<symbol_t>> {};
-
-void print_sentence_vector(const vector<symbol_t> &symbols) {
+inline void print_sentence_vector(const vector<symbol_t> &symbols) {
   for (const auto &symbol : symbols) {
     cout << symbol << " ";
   }
 }
 
-void for_each_derivation_result(
+inline shared_ptr<derivation_result_t>
+print_result(const shared_ptr<derivation_result_t> &_result) {
+  shared_ptr<derivation_result_t> root_result;
+  for (auto i = _result; i; i = i->super)
+    print_sentence_vector(i->chain);
+  return root_result;
+}
+
+inline shared_ptr<derivation_result_t>
+get_root_result(shared_ptr<derivation_result_t> &result) {
+  shared_ptr<derivation_result_t> root = result;
+  if (not root)
+    return nullptr;
+  while (root->super)
+    root = root->super;
+  return root;
+}
+
+inline bool operator==(const derivation_result_t &A, const derivation_result_t &B) {
+  return A.production_index == B.production_index;
+}
+
+struct sentences_history_t : vector<vector<symbol_t>> {};
+
+inline void for_each_derivation_result(
     const shared_ptr<derivation_result_t> &result,
     function<void(const shared_ptr<derivation_result_t> &res)> &callback) {
   if (not result) {
@@ -49,7 +67,7 @@ void for_each_derivation_result(
 }
 
 template <typename T>
-shared_ptr<derivation_tree_node_t<T>>
+inline shared_ptr<derivation_tree_node_t<T>>
 make_node(const symbol_t &symbol, const vector<symbol_t> &sentence) {
   shared_ptr<derivation_tree_node_t<T>> node =
       make_shared<derivation_tree_node_t<T>>();
@@ -59,7 +77,7 @@ make_node(const symbol_t &symbol, const vector<symbol_t> &sentence) {
   return node;
 }
 
-vector<shared_ptr<derivation_result_t>>
+inline vector<shared_ptr<derivation_result_t>>
 derivate(context_free_grammar_t &cfg, const vector<symbol_t> &sentence,
          size_t production_offset = 0) {
   vector<shared_ptr<derivation_result_t>> results;
@@ -94,7 +112,7 @@ derivate(context_free_grammar_t &cfg, const vector<symbol_t> &sentence,
   return results;
 }
 
-bool derivate_recursively(context_free_grammar_t &cfg,
+inline bool derivate_recursively(context_free_grammar_t &cfg,
                           const vector<symbol_t> &sentence,
                           sentences_history_t &history,
                           shared_ptr<derivation_result_t> &_result) {
@@ -122,29 +140,11 @@ bool derivate_recursively(context_free_grammar_t &cfg,
   return false;
 }
 
-bool derivate_recursively(context_free_grammar_t &cfg,
+inline bool derivate_recursively(context_free_grammar_t &cfg,
                           const vector<symbol_t> &sentence,
                           sentences_history_t &history) {
   shared_ptr<derivation_result_t> _result = nullptr;
   return derivate_recursively(cfg, sentence, history, _result);
-}
-
-shared_ptr<derivation_result_t>
-print_result(const shared_ptr<derivation_result_t> &_result) {
-  shared_ptr<derivation_result_t> root_result;
-  for (auto i = _result->super; i; i = i->super)
-    print_sentence_vector(i->chain);
-  return root_result;
-}
-
-shared_ptr<derivation_result_t>
-get_root_result(shared_ptr<derivation_result_t> &result) {
-  shared_ptr<derivation_result_t> root = result;
-  if (not root)
-    return nullptr;
-  while (root->super)
-    root = root->super;
-  return root;
 }
 
 template <typename T>

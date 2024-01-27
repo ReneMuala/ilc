@@ -1,9 +1,11 @@
 #pragma once
 #include "symbol.hpp"
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -17,19 +19,66 @@ template <typename T> struct derivation_tree_node_t {
   optional<T> value;
   vector<shared_ptr<derivation_tree_node_t>> children = {};
 
+  static void __default_print_callbacl(const symbol_t &symbol,
+                                       std::ostream &ostream,
+                                       const optional<T> &) {
+    ostream << symbol;
+  }
+
   void print(ostream &ostream,
-             const pair<string, string> &depth_indicator = {"{", "}"}) {
+             const pair<string, string> &depth_indicator = {"{", "}"},
+             function<void(const symbol_t &, std::ostream &, optional<T> &)>
+                 callback = __default_print_callbacl) {
     for (auto &child : children) {
       if (child && child->children.size()) {
         if (child->children.size() > 1)
           ostream << depth_indicator.first;
-        child->print(ostream);
+        child->print(ostream, depth_indicator, callback);
         if (child->children.size() > 1)
           cout << depth_indicator.second;
       } else if (child) {
-        ostream << child->symbol;
+        try {
+          callback(child->symbol, ostream, child->value);
+        } catch (std::runtime_error e) {
+          ostream << e.what();
+        }
       } else {
         ostream << "null";
+      }
+    }
+  }
+
+  void for_each_leaf(
+      function<void(shared_ptr<derivation_tree_node_t<T>>)> callback) {
+    for (auto &child : children) {
+      if (child && child->children.size()) {
+        child->for_each_leaf(callback);
+      } else if (child) {
+        try {
+          callback(child);
+        } catch (std::runtime_error e) {
+          cerr << e.what();
+        }
+      } else {
+        cerr << "child is null";
+      }
+    }
+  }
+
+  void for_each_child(
+      function<void(shared_ptr<derivation_tree_node_t<T>>)> callback) {
+    for (auto &child : children) {
+      if (child && child->children.size()) {
+        child->for_each_child(callback);
+      }
+    }
+    for (auto &child : children) {
+      if (child) {
+        try {
+          callback(child);
+        } catch (std::runtime_error e) {
+          cerr << e.what();
+        }
       }
     }
   }
@@ -49,7 +98,23 @@ template <typename T> struct derivation_tree_node_t {
     return nullptr;
   };
 
-  bool replace_child(int index, shared_ptr<derivation_tree_node_t> _new_child) {
+  optional<T> get_first_value(bool is_first = false) {
+    if (is_first && value)
+      return value;
+    for (auto &child : children) {
+      if (child->value) {
+        return child->value;
+      } else if (child->children.size()) {
+        auto res = child->get_first_value();
+        if (res)
+          return res;
+      }
+    }
+    return nullptr;
+  };
+
+  bool replace_child(int index,
+                     shared_ptr<derivation_tree_node_t> &_new_child) {
     auto old = get_child(index);
     if (old) {
       auto new_child = move(_new_child);
