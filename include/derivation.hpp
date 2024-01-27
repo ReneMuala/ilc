@@ -125,7 +125,6 @@ inline bool derivate_recursively(context_free_grammar_t &cfg,
                           shared_ptr<derivation_result_t> &_result) {
   history.push_back(sentence);
   auto results = derivate(cfg, sentence);
-  cout << results.size() << endl;
   for (auto &result : results) {
     if (result->new_sentence.size() == 1 &&
         result->new_sentence.at(0) == cfg.start) {
