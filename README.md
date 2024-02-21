@@ -3,7 +3,149 @@
 
 # ILC - I Love Compilers
 
-ILC is a powerful, header-only C++20 framework designed for parsing, providing a set of libraries for tasks ranging from simple calculators to complex programming language syntax parsers. It leverages **context-free grammars** and employs a **bottom-up parsing** technique for efficient and effective parsing.
+ILC is a powerful, header-only C++20 framework designed for parsing, providing a set of libraries for tasks ranging from simple calculators to complex programming language syntax parsers. It leverages **context-free grammars** and employs a **up-bottom parsing** technique for efficient and effective parsing.
+
+# Whats new on ILC 2.0?
+
+## IMPROVED PERFOMANCE
+  * ILC is faster now 
+
+  ||1.0|2.0|
+  |--|--|--|
+  |Time|`0m21.430s`|`0m0.039s`|
+  |Number of tokens|`1642`|`305280`|
+  |Technique| bottom-up  | up-bottom |
+
+## New Syntax 
+
+### ILC 1.0
+```cpp
+int main(){
+  context_free_grammar_t cfg;
+
+  cfg.terminals = {PLUS, MINUS, TIMES, SLASH, EQU, DEQU, NOT, AND, OR, NUM, ID};
+
+  cfg.non_terminals = {
+        STAT,
+        // operations
+        SUM,
+        SUB,
+        MUL,
+        DIV,
+        ASGN,
+        EQLT,
+        NEG,
+        CONJ,
+        DISJ,
+        VAL,
+    };
+
+  cfg.start = STAT;
+
+    /* clang-format off */
+  cfg.production_rule = {
+        production{STAT, {ASGN}},
+        production{STAT, {STAT, ASGN}},
+        production{ASGN, {ID, EQU, VAL}},
+        production{VAL, {VAL, PLUS, VAL}},
+        production{VAL, {VAL, MINUS, VAL}},
+        production{VAL, {VAL, TIMES, VAL}},
+        production{VAL, {VAL, DIV, VAL}},
+        production{VAL, {NUM}},
+    };
+    /* clang-format on */
+
+  cfg.verify();
+
+  shared_ptr<derivation_result_t> _result = make_shared<derivation_result_t>();
+
+  vector<symbol_t> chain = {ID,    EQU,   NUM,   PLUS,  NUM};
+
+  auto history = sentences_history_t{};
+
+  auto is_valid = derivate_recursively(cfg, chain, history, _result);
+
+  std::cout << (is_valid ? "is valid" : "is not valid") << std::endl;
+}
+
+```
+
+### ILV 2.0
+
+```cpp
+enum SYMBOL { VAL, ID, NUM, PLUS, MINUS, MULT, DIV, EQU };
+
+BEGIN_ILC_CODEGEN
+
+BEGIN_PRODUCTION(PREFIX_VAL)
+BEGIN_CHAIN_DECLARATION VAL END_CHAIN_DECLARATION 
+  REQUIRE_NON_TERMINAL(0)
+END_PRODUCTION
+
+BEGIN_PRODUCTION(P000_VAL)
+BEGIN_CHAIN_DECLARATION PLUS, VAL END_CHAIN_DECLARATION 
+  REQUIRE_TERMINAL(0)
+  REQUIRE_NON_TERMINAL(1)
+END_PRODUCTION
+
+BEGIN_PRODUCTION(P001_VAL)
+BEGIN_CHAIN_DECLARATION MINUS, VAL END_CHAIN_DECLARATION 
+  REQUIRE_TERMINAL(0)
+  REQUIRE_NON_TERMINAL(1)
+END_PRODUCTION
+
+BEGIN_PRODUCTION(P002_VAL)
+BEGIN_CHAIN_DECLARATION MULT, VAL END_CHAIN_DECLARATION 
+  REQUIRE_TERMINAL(0)
+  REQUIRE_NON_TERMINAL(1)
+END_PRODUCTION
+
+BEGIN_PRODUCTION(P003_VAL)
+BEGIN_CHAIN_DECLARATION DIV, VAL END_CHAIN_DECLARATION 
+  REQUIRE_TERMINAL(0)
+  REQUIRE_NON_TERMINAL(1)
+END_PRODUCTION
+
+BEGIN_PRODUCTION(P004_VAL)
+BEGIN_CHAIN_DECLARATION NUM END_CHAIN_DECLARATION 
+  REQUIRE_TERMINAL(0)
+END_PRODUCTION
+
+BEGIN_PRODUCTION(P000_ASGN)
+BEGIN_CHAIN_DECLARATION ID, EQU, VAL END_CHAIN_DECLARATION 
+  REQUIRE_TERMINAL(0)
+  REQUIRE_TERMINAL(1)
+  REQUIRE_NON_TERMINAL(2)
+END_PRODUCTION
+
+BEGIN_BINDINGS
+  BEGIN_SYMBOL_BINDING(VAL)
+    (PREFIX_VAL() and ( P000_VAL() or P001_VAL() or P002_VAL() or P003_VAL() or true)) or 
+    P004_VAL()
+  END_SYMBOL_BINDING
+END_BINDINGS
+
+END_ILC_CODEGEN
+
+using namespace ILC;
+
+bool _parse() {
+  offset = 0;
+  while ((P000_ASGN()) && not(offset >= chain_size))
+    ;
+  std::cout << "stoped at: " << offset << std::endl;
+  return offset == chain_size;
+}
+
+int main() {
+  chain = { ID,EQU, NUM, PLUS, NUM, PLUS, NUM, PLUS, NUM};
+  chain_size = chain.size();
+  bool is_valid = _parse();
+  std::cout << (is_valid ? "is valid" : "is not valid") << std::endl;
+}
+
+```
+
 
 ## Features
 
@@ -12,104 +154,6 @@ ILC is a powerful, header-only C++20 framework designed for parsing, providing a
 - **Powerful Parsing**: The framework uses context-free grammars to successfully parse input, making it suitable for a variety of parsing tasks.
 
 - **Header-Only**: ILC is a header-only library, making integration into your projects seamless without the need for additional build configurations.
-
-## Getting Started
-
-To get started with ILC, follow these simple steps:
-
-1. **Include ILC Header**: Include the ILC header file in your project.
-
-   ```cpp
-   #include "ilc.hpp"
-   ```
-
-2. **Define Grammar Rules**: Specify the context-free grammar rules for your parser.
-
-   ```cpp
-    auto cfg = context_free_grammar_t{};
-
-    cfg.terminals = {TIMES, PLUS, NUM};
-
-    cfg.non_terminals = {S, A, B};
-
-    cfg.start = S;
-
-    cfg.production_rule = {
-        // S -> S + A | A
-        production{S, {S, PLUS, A}},  production{S, {A}},
-        // A -> A * B | B
-        production{A, {A, TIMES, B}}, production{A, {B}},
-        // B -> {NUMBER} | S
-        production{B, {NUM}},         production{B, {S}},
-    };
-
-    cfg.verify();
-   ```
-
-3. **Parse Input**: Use the provided functions to parse input according to your grammar.
-
-   ```cpp
-    shared_ptr<derivation_result_t> _result = make_shared<derivation_result_t>();
-    // # + # * # + #
-    auto sentence_symbols =
-        vector<symbol_t>{NUM, PLUS, NUM, TIMES, NUM, PLUS, NUM};
-    // used to avoid infinit loops
-    auto history = sentences_history_t{};
-
-    bool is_valid = derivate_recursively(cfg, sentence_symbols, history, _result);
-   ```
-
-4. **Check Results**: Verify the parsing result and utilize the provided tools to build a tree for further analysis.
-
-   ```cpp
-     if (is_valid) {
-        cout << "valid\n";
-        auto tree = build_derivation_tree<int>(_result);
-        // (# + (# * #)) + #
-        tree->print(cout);
-    } else {
-        cout << "invalid\n";
-    }
-   ```
-
-## Example Usage
-
-```cpp
-#include "../include/ilc.hpp"
-
-// namespace ILC
-int main() {
-  using namespace ILC;
-  auto cfg = context_free_grammar_t{};
-  cfg.terminals = {TIMES, PLUS, NUM};
-
-  cfg.non_terminals = {S, A, B};
-
-  cfg.start = S;
-
-  cfg.production_rule = {
-      production{S, {S, PLUS, A}},  production{S, {A}},
-      production{A, {A, TIMES, B}}, production{A, {B}},
-      production{B, {NUM}},         production{B, {S}},
-  };
-
-  cfg.verify();
-
-  shared_ptr<derivation_result_t> _result = make_shared<derivation_result_t>();
-
-  auto sentence_symbols =
-      vector<symbol_t>{NUM, PLUS, NUM, TIMES, NUM, PLUS, NUM};
-  auto history = sentences_history_t{};
-  auto is_valid = derivate_recursively(cfg, sentence_symbols, history, _result);
-  if (is_valid) {
-    cout << "valid\n";
-    auto tree = build_derivation_tree<int>(_result);
-    tree->print(cout);
-  } else {
-    cout << "invalid\n";
-  }
-}
-```
 
 ## Contributing
 

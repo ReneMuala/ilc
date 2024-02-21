@@ -1,6 +1,4 @@
 #pragma once
-#include "context_free_grammar.hpp"
-#include "derivation.hpp"
-#include "derivation_tree.hpp"
-#include "symbol.hpp"
+#define ILC_VERSION 2.0
+#include "codegen.hpp"
 #include "tokenization.hpp"
