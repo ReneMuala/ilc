@@ -3,6 +3,9 @@
 #include <vector>
 
 struct derivation_history_t {
+  /// indicates the last compilation time in wich this producion was used
+  unsigned short compilation_id{0};
+  /// indicates the offset starting from the beginning the token chain
   int offset{-1};
 };
 
@@ -17,9 +20,16 @@ constexpr inline bool HANDLE_NON_TERMINAL(int); // definined with BEGIN_BINDINGS
 
 #define BEGIN_ILC_CODEGEN                                                      \
   namespace ILC {                                                              \
-  static derivation_history_t history{};                                       \
-  static std::vector<SYMBOL> chain{};                                          \
+  /** @brief Compilation time, indicates the ILC compilation time, should be   \
+   * incremented when the chain content changes  */                            \
+  static unsigned short compilation_id{0};                                     \
+  /** @brief The chain to be parsed */ static std::vector<SYMBOL> chain{};     \
+  /** @brief The size of the chain, should be updated with chain.size() when   \
+   * @a chain content's change*/                                               \
   static size_t chain_size{0};                                                 \
+  /** @brief Indicates the offset of the compilation @warning When getting the \
+   * value of an index after REQUIRE_X(...) always do chain[offset-1], because \
+   * offset gets incremented after REQUIRE*/                                   \
   static int offset{0};                                                        \
   }
 
@@ -49,9 +59,12 @@ constexpr inline bool HANDLE_NON_TERMINAL(int); // definined with BEGIN_BINDINGS
     }                                                                          \
     inline bool CHECK_DERIVATION_HISTORY(derivation_history_t &history) {      \
       static bool found;                                                       \
-      found = history.offset >= ILC::offset;                                   \
-      if (not found)                                                           \
+      found = history.offset >= ILC::offset and                                \
+              history.compilation_id == ILC::compilation_id;                   \
+      if (not found) {                                                         \
         history.offset = ILC::offset;                                          \
+        history.compilation_id = ILC::compilation_id;                          \
+      }                                                                        \
       return found;                                                            \
     }                                                                          \
     inline void CLEAR_DERIVATION_HISTORY(derivation_history_t &history) {      \
