@@ -70,7 +70,7 @@ int main(){
 
 ```
 
-### ILV 2.0
+### ILC 2.0
 
 ```cpp
 enum SYMBOL { VAL, ID, NUM, PLUS, MINUS, MULT, DIV, EQU };
