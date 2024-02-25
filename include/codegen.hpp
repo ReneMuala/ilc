@@ -97,6 +97,9 @@ constexpr inline bool HANDLE_NON_TERMINAL(int); // definined with BEGIN_BINDINGS
   static const auto DECLARED_CHAIN_SIZE =                                      \
       sizeof(DECLARED_CHAIN) / sizeof(SYMBOL);
 
+#define TRY_REQUIRE_TERMINAL(I) HANDLE_TERMINAL(DECLARED_CHAIN[I])
+#define TRY_REQUIRE_NON_TERMINAL(I) HANDLE_NON_TERMINAL(DECLARED_CHAIN[I])
+
 #define REQUIRE_TERMINAL(I)                                                    \
   if (not(HANDLE_TERMINAL(DECLARED_CHAIN[I]))) {                               \
     ILC::offset = offsetc;                                                     \
