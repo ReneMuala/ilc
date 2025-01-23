@@ -83,7 +83,7 @@ constexpr inline bool HANDLE_NON_TERMINAL(int); // definined with BEGIN_BINDINGS
     static derivation_history_t HISTORY;                                       \
     if (CHECK_DERIVATION_HISTORY(HISTORY))                                     \
       return false;                                                            \
-    const size_t offsetc = ILC::offset;
+    const size_t OFFSETC = ILC::offset;
 
 #define END_PRODUCTION                                                         \
   CLEAR_DERIVATION_HISTORY(HISTORY);                                           \
@@ -100,15 +100,30 @@ constexpr inline bool HANDLE_NON_TERMINAL(int); // definined with BEGIN_BINDINGS
 #define TRY_REQUIRE_TERMINAL(I) HANDLE_TERMINAL(DECLARED_CHAIN[I])
 #define TRY_REQUIRE_NON_TERMINAL(I) HANDLE_NON_TERMINAL(DECLARED_CHAIN[I])
 
+#define ROLLBACK_PRODUCTION()                                                  \
+  ILC::offset = OFFSETC;                                                       \
+  return false;
+
 #define REQUIRE_TERMINAL(I)                                                    \
   if (not(HANDLE_TERMINAL(DECLARED_CHAIN[I]))) {                               \
-    ILC::offset = offsetc;                                                     \
-    return false;                                                              \
+    ROLLBACK_PRODUCTION()                                                      \
   }
+
+#define REQUIRE_TERMINAL_CALLBACK(I, C)                                        \
+  if (not(HANDLE_TERMINAL(DECLARED_CHAIN[I]))) {                               \
+    C();                                                                       \
+    ROLLBACK_PRODUCTION()                                                      \
+  }
+
 #define REQUIRE_NON_TERMINAL(I)                                                \
   if (not(HANDLE_NON_TERMINAL(DECLARED_CHAIN[I]))) {                           \
-    ILC::offset = offsetc;                                                     \
-    return false;                                                              \
+    ROLLBACK_PRODUCTION()                                                      \
+  }
+
+#define REQUIRE_NON_TERMINAL_CALLBACK(I, C)                                    \
+  if (not(HANDLE_NON_TERMINAL(DECLARED_CHAIN[I]))) {                           \
+    C();                                                                       \
+    ROLLBACK_PRODUCTION()                                                      \
   }
 
 #endif

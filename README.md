@@ -155,6 +155,29 @@ int main() {
 
 - **Header-Only**: ILC is a header-only library, making integration into your projects seamless without the need for additional build configurations.
 
+
+##  ILC PILARS
+
+This document outlines the key principles of the ILC PILARS framework.
+
+1. __Conjugation__
+
+   If multiple productions start with the same combination of tokens, they should be
+     combined into a single non-terminal production called "conjugation of x,"
+     where x is the common prefix shared among the productions.
+     The format for this is as follows:
+       ```
+       conjugation_of_x := X and (P1_SUFFIX, P2_SUFFIX, ..., PN_SUFFIX)
+       ```
+
+2. __AOT Parsing__
+  
+   If precedence is required for a specific production, the system should first
+     attempt to require a non-recursive candidate. If this attempt is successful,
+     the normal require should be ignored, and a suffix solution should be invoked
+     at the end of the production.
+
+
 ## Contributing
 
 We welcome contributions! If you have ideas for improvements or find any issues, please open an [issue](https://github.com/your-username/ilc/issues) or submit a [pull request](https://github.com/your-username/ilc/pulls).
